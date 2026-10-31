@@ -2,7 +2,7 @@
 
 # 🚀｜.Neo-Client - Minecraft Launcher Profile
 
-**説明：** NEXUS専用のMinecraft の特殊バージョン。<br>`.minecraft/versions`に`.Neo-Client/.Neo-Client.json`を展開するだけで、環境構築が自動でできる！
+**説明：** NEXUS専用のMinecraft の特殊バージョン。<br>`.minecraft/versions`に`.Neo-Client`フォルダを置くだけで、環境構築が自動でできる！
 
 *Install once. Launch from the official launcher. Mods come by themselves.*
 
@@ -45,7 +45,7 @@ Author   : argonaute_nemo
 
 ## ❱ 導入【Introduction】
 
-**Windows・macOS・Linux のどれでも使える。** 次の2通りから選ぶ。どちらでも結果は同じ（`versions` に `.Neo-Client.json` が置かれる）。
+**Windows・macOS・Linux のどれでも使える。** [`Neo-Client.zip`](https://github.com/nemonowa/.Neo-Client/releases/download/v1.0/Neo-Client.zip) をダウンロードして展開し、次のどちらかで入れる。結果は同じ。
 
 ### あなたの Minecraft フォルダ（`.minecraft`）の場所
 
@@ -57,30 +57,35 @@ Author   : argonaute_nemo
 
 以下、この場所を `<minecraft>` と書く。
 
-### 方法A：手動で配置する（`Neo-Client.zip`）
+### 方法A：スクリプトで入れる
 
-1. ランチャーを終了する
-2. [Releases](../../releases) から `Neo-Client.zip` をダウンロードし、`<minecraft>/versions` に展開する
-
-   ```text
-   <minecraft>/versions/.Neo-Client/.Neo-Client.json
-   ```
-
-   上の場所に `.Neo-Client.json`（**先頭の `.` ドット抜け注意！** macOS・Linux のファイラーはドット始まりのファイルを隠すので、隠しファイルの表示をオンにして確かめる）ができていればよい。リリースにある単体の `Neo-Client.json` は自動更新用なので、置かない
-
-3. ランチャーを起動し、インストール一覧の「.Neo-Client」で起動する
-
-Minecraft 26.3・Fabric Loader・`neoclient.jar` は、起動した時にランチャーが自動でダウンロードする。
-
-### 方法B：スクリプトで入れる（`Neo-Client-install.zip`）
-
-ランチャーを終了してから、`Neo-Client-install.zip` を展開してスクリプトを実行する（「OK: ...」と出れば成功）。
+ランチャーを終了してから、展開したフォルダのスクリプトを実行する（「OK: ...」と出れば成功）。
 
 | OS | 実行するもの |
 |---|---|
 | Windows | `install.cmd` をダブルクリック |
+<<<<<<< HEAD
+| macOS・Linux | ターミナルで `./install.sh`（実行権限が無ければ `bash install.sh`） |
+
+macOS・Linux で `.minecraft` の場所が違う場合は、`./install.sh /path/to/minecraft` のように第1引数で指定する。
+
+### 方法B：手動で写す
+
+ランチャーを終了してから、展開した中の `.Neo-Client` フォルダを `<minecraft>/versions` に写す。
+
+```text
+<minecraft>/versions/.Neo-Client/.Neo-Client.json
+```
+
+上の場所に `.Neo-Client.json`（**先頭の `.` ドット抜け注意！** macOS・Linux のファイラーはドット始まりのファイルを隠すので、隠しファイルの表示をオンにして確かめる）ができていればよい。リリースにある単体の `Neo-Client.json` は自動更新用なので、置かない。
+
+### 起動
+
+ランチャーを起動し、インストール一覧の「.Neo-Client」で起動する。Minecraft 26.3・Fabric Loader・`neoclient.jar` は、起動した時にランチャーが自動でダウンロードする。
+=======
 | macOS・Linux | ターミナルで `./install.sh`（実行権限が無ければ `chmod +x install.sh`、または `bash install.sh`） |
 - macOS・Linux で `.minecraft` の場所が違う場合は、`./install.sh /path/to/minecraft` のように第1引数で指定する。
+>>>>>>> 0d198b1db8c2c0c2be08de09bdb5c8ca9b76d007
 
 ---
 
@@ -144,5 +149,5 @@ java -Dtest.root=<空のフォルダ> -cp out neo.client.loader.NeoClientTester
 
 ## ❱ 連繫【Link】
 
-- **Download：** [Releases](../../releases)
+- **Download：** [Neo-Client.zip](https://github.com/nemonowa/.Neo-Client/releases/download/v1.0/Neo-Client.zip)
 - **Mod：** [NeoMod](https://github.com/nemonowa/NeoMod)

@@ -1,5 +1,5 @@
 # .Neo-Client build script (ASCII only: safe for Windows PowerShell 5.1)
-# Steps: compile -> test -> jar -> update sha1/size in .Neo-Client.json and install.ps1
+# Steps: compile -> test -> jar -> update sha1/size in .Neo-Client.json -> release files
 param([switch]$SkipTests)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -91,11 +91,28 @@ function Update-File([string]$path, [string]$pattern, [string]$replacement) {
   [System.IO.File]::WriteAllText($path, $re.Replace($text, $replacement, 1), $utf8)
 }
 Update-File (Join-Path $root '.Neo-Client.json') '("artifact"\s*:\s*\{.*?"sha1"\s*:\s*")[0-9a-fA-F]{40}(".*?"size"\s*:\s*)\d+' ('${1}' + $sha1 + '${2}' + $size)
-Update-File (Join-Path $root 'install.ps1') '(\$expectSha1\s*=\s*'')[0-9a-fA-F]{40}('')' ('${1}' + $sha1 + '${2}')
-Update-File (Join-Path $root 'install.ps1') '(\$expectSize\s*=\s*)\d+' ('${1}' + $size)
-Write-Host 'updated: .Neo-Client.json, install.ps1'
+Write-Host 'updated: .Neo-Client.json'
+
+# 5) release files in admin\release: Neo-Client.zip (the .Neo-Client folder + installers + README) and Neo-Client.json (for self-update)
+$rel = Join-Path $root 'admin\release'
+New-Item -ItemType Directory -Force $rel | Out-Null
+Copy-Item (Join-Path $root '.Neo-Client.json') (Join-Path $rel 'Neo-Client.json') -Force
+Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+$zipPath = Join-Path $rel 'Neo-Client.zip'
+if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+$zip = [System.IO.Compression.ZipFile]::Open($zipPath, 'Create')
+try {
+  # entry names use '/' (Compress-Archive in PowerShell 5.1 writes '\', which breaks on macOS / Linux)
+  foreach ($e in @(@('.Neo-Client.json', '.Neo-Client/.Neo-Client.json'), @('install.cmd', 'install.cmd'), @('install.sh', 'install.sh'), @('README.md', 'README.md'))) {
+    $entry = [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, (Join-Path $root $e[0]), $e[1])
+    if ($e[1] -like '*.sh') { $entry.ExternalAttributes = [int](0x81ED -shl 16) }
+  }
+} finally {
+  $zip.Dispose()
+}
+Write-Host 'release: admin\release\Neo-Client.zip, admin\release\Neo-Client.json'
 
 Remove-Item (Join-Path $root 'build') -Recurse -Force
 Write-Host ''
 Write-Host "DONE  neoclient.jar  sha1=$sha1  size=$size"
-Write-Host 'Next: upload neoclient.jar and .Neo-Client.json (as Neo-Client.json) to the same Release.'
+Write-Host 'Next: upload neoclient.jar first, then admin\release\Neo-Client.json and Neo-Client.zip, to the same Release.'
