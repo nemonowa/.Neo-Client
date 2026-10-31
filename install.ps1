@@ -2,8 +2,8 @@
 $ErrorActionPreference = 'Stop'
 $mc   = Join-Path $env:APPDATA '.minecraft'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$expectSha1 = '72bec4192ab52aef957b934e6030c241f5049e4b'
-$expectSize = 22740
+$expectSha1 = 'a0eead809439e604b00c416048c5ddaba39eb186'
+$expectSize = 23097
 
 if (-not (Test-Path $mc)) { throw ".minecraft not found: $mc" }
 if (Get-Process -Name 'MinecraftLauncher' -ErrorAction SilentlyContinue) {

@@ -1,6 +1,7 @@
-package com.neo;
+package neo.client.loader;
 
 import java.io.File;
+import neo.client.setup.ModSetup;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -155,7 +156,7 @@ public class NeoClient {
     }
 
     /** このクライアント自身のフォルダ(versions/.Neo-Client)。gameDir が既にそこなら gameDir そのもの。 */
-    static File versionDir(File gameDir) {
+    public static File versionDir(File gameDir) {
         return isVersionDir(gameDir) ? gameDir : new File(new File(gameDir, "versions"), CLIENT_NAME);
     }
 

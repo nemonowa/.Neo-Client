@@ -4,7 +4,7 @@
   "type": "release",
   "time": "2026-10-31T05:14:48+00:00",
   "releaseTime": "2026-10-31T05:14:48+00:00",
-  "mainClass": "com.neo.NeoClient",
+  "mainClass": "neo.client.loader.NeoClient",
   "arguments": {
     "jvm": [
       "-DFabricMcEmu= net.minecraft.client.main.Main "
@@ -18,8 +18,8 @@
         "artifact": {
           "path": "neo/neoclient.jar",
           "url": "https://github.com/nemonowa/.Neo-Client/releases/download/v1.0/neoclient.jar",
-          "sha1": "72bec4192ab52aef957b934e6030c241f5049e4b",
-          "size": 22740
+          "sha1": "a0eead809439e604b00c416048c5ddaba39eb186",
+          "size": 23097
         }
       }
     },

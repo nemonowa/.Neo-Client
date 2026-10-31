@@ -1,4 +1,4 @@
-package com.neo;
+package neo.client.setup;
 
 import com.sun.net.httpserver.HttpServer;
 
@@ -19,10 +19,10 @@ import java.util.zip.ZipOutputStream;
 
 /**
  * ModSetup のテスト。ローカルの仮Modrinthサーバー(v2のレスポンス形式を再現)で確認する。
- * 実行: javac -cp neoclient.jar -d testout test/ModSetupTest.java
- *       java -Dtest.root=<空の作業dir> -cp neoclient.jar:testout com.neo.ModSetupTest   (最後に ALL PASS)
+ * 実行: javac -cp neoclient.jar -d testout tester/ModSetupTester.java
+ *       java -Dtest.root=<空の作業dir> -cp neoclient.jar:testout neo.client.setup.ModSetupTester   (最後に ALL PASS)
  */
-public class ModSetupTest {
+public class ModSetupTester {
 
     static final String MC = "26.3";
 

@@ -9,7 +9,7 @@
 ![Minecraft](https://img.shields.io/badge/Minecraft-26.3-62b47a)
 ![Loader](https://img.shields.io/badge/loader-Fabric-dbd0b4)
 ![Java](https://img.shields.io/badge/Java-25-b07219)
-![Platform](https://img.shields.io/badge/platform-Windows-555)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555)
 
 </div>
 
@@ -24,6 +24,7 @@ Minecraft の公式ランチャーのインストール一覧に「.Neo-Client�
 Name     : .Neo-Client
 Version  : 1.0
 Requires : Minecraft 26.3 / Java 25 / 公式ランチャー
+Platform : Windows / macOS / Linux
 Loader   : Fabric Loader 0.19.5
 Author   : argonaute_nemo
 ```
@@ -44,43 +45,63 @@ Author   : argonaute_nemo
 
 ## ❱ 導入【Introduction】
 
-**zip を1つ展開するだけで使える。**
+**Windows・macOS・Linux のどれでも使える。** 次の2通りから選ぶ。どちらでも結果は同じ（`versions` に `.Neo-Client.json` が置かれる）。
+
+### あなたの Minecraft フォルダ（`.minecraft`）の場所
+
+| OS | 場所 |
+|---|---|
+| Windows | `%APPDATA%\.minecraft` |
+| macOS | `~/Library/Application Support/minecraft` |
+| Linux | `~/.minecraft` |
+
+以下、この場所を `<minecraft>` と書く。
+
+### 方法A：手動で配置する（`Neo-Client.zip`）
 
 1. ランチャーを終了する
-2. [Releases](../../releases) から `Neo-Client.zip` をダウンロードし、`%APPDATA%\.minecraft\versions` に展開する
+2. [Releases](../../releases) から `Neo-Client.zip` をダウンロードし、`<minecraft>/versions` に展開する
 
    ```text
-   %APPDATA%\.minecraft\versions\.Neo-Client\.Neo-Client.json
+   <minecraft>/versions/.Neo-Client/.Neo-Client.json
    ```
 
-   上の場所に `.Neo-Client.json`（**先頭の `.` ドット抜け注意！**）ができていればよい。リリースにある単体の `Neo-Client.json` は自動更新用なので、置かない
+   上の場所に `.Neo-Client.json`（**先頭の `.` ドット抜け注意！** macOS・Linux のファイラーはドット始まりのファイルを隠すので、隠しファイルの表示をオンにして確かめる）ができていればよい。リリースにある単体の `Neo-Client.json` は自動更新用なので、置かない
 
 3. ランチャーを起動し、インストール一覧の「.Neo-Client」で起動する
 
 Minecraft 26.3・Fabric Loader・`neoclient.jar` は、起動した時にランチャーが自動でダウンロードする。
 
-<details>
-<summary>インストーラーを使う場合</summary>
+### 方法B：スクリプトで入れる（`Neo-Client-install.zip`）
 
-`Neo-Client-install.zip` を展開して `install.bat` を実行する（「OK: ...」と出れば成功）。json と jar を手元から `%APPDATA%\.minecraft` へ写すので、jar のダウンロードが要らない。
+ランチャーを終了してから、`Neo-Client-install.zip` を展開してスクリプトを実行する（「OK: ...」と出れば成功）。
 
-</details>
+| OS | 実行するもの |
+|---|---|
+| Windows | `install.cmd` をダブルクリック |
+| macOS・Linux | ターミナルで `./install.sh`（実行権限が無ければ `chmod +x install.sh`、または `bash install.sh`） |
+
+- json と jar を手元から `<minecraft>` へ写すので、jar のダウンロードが要らない。
+- macOS・Linux で `.minecraft` の場所が違う場合は、`./install.sh /path/to/minecraft` のように第1引数で指定する。
+- jar が json の sha1・サイズと合わない場合は、何も置かずに止まる。
+
+---
 
 初めて起動した時だけ、コンソールに注意書きを出す。
 
 自分でビルドする場合（JDK 21 以上）：
 
 ```text
-javac --release 21 -encoding UTF-8 -d out src/com/neo/*.java
+javac --release 21 -encoding UTF-8 -d out $(find src -name "*.java")
 jar --create --file neoclient.jar -C out .
 ```
 
 テスト（ローカルの仮サーバーで Mod の取得を確かめる。最後に `ALL PASS`）：
 
 ```text
-javac -encoding UTF-8 -cp out -d out test/*.java
-java -Dtest.root=<空のフォルダ> -cp out com.neo.ModSetupTest
-java -Dtest.root=<空のフォルダ> -cp out com.neo.NeoClientTest
+javac -encoding UTF-8 -cp out -d out $(find tester -name "*.java")
+java -Dtest.root=<空のフォルダ> -cp out neo.client.setup.ModSetupTester
+java -Dtest.root=<空のフォルダ> -cp out neo.client.loader.NeoClientTester
 ```
 
 ---

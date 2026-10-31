@@ -1,4 +1,4 @@
-package com.neo;
+package neo.client.loader;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -6,9 +6,9 @@ import java.util.Arrays;
 
 /**
  * NeoClient のゲームのフォルダの切り替えのテスト。
- * 実行: java -Dtest.root=<空の作業dir> -cp out com.neo.NeoClientTest   (最後に ALL PASS)
+ * 実行: java -Dtest.root=<空の作業dir> -cp out neo.client.loader.NeoClientTester   (最後に ALL PASS)
  */
-public class NeoClientTest {
+public class NeoClientTester {
 
     static int pass = 0, fail = 0;
 

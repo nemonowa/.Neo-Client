@@ -1,6 +1,7 @@
-package com.neo;
+package neo.client.setup;
 
 import java.io.File;
+import neo.client.loader.NeoClient;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -52,7 +53,7 @@ import java.util.zip.ZipFile;
  * 最新のリリースを選び、GitHub が付ける SHA-256 で検証する。起動のたびに最新を確かめ、新しい版が出ていれば入れ替える
  * (確かめられなければ、入れ済みの版のまま起動する)。
  */
-final class ModSetup {
+public final class ModSetup {
 
     /**
      * 自動導入するModrinthのプロジェクトslug。いずれもFabricのmod idと一致する。
@@ -87,7 +88,7 @@ final class ModSetup {
     private ModSetup() {}
 
     /** 必須MODがすべてそろっていれば true。足りない/失敗があれば false。 */
-    static boolean ensure(File gameDir, String mcVersion) {
+    public static boolean ensure(File gameDir, String mcVersion) {
         if (Boolean.getBoolean("neo.skipModSetup")) {
             info("MOD自動導入をスキップします(neo.skipModSetup)");
             return true;
@@ -364,7 +365,7 @@ final class ModSetup {
      * 書き換えは次の起動から効く(ランチャーが新しいSHA1を見て neoclient.jar を取り直す)。
      * 失敗しても何もしない(今のJSONのまま起動を続ける)。
      */
-    static void updateVersionJson(File versionDir) {
+    public static void updateVersionJson(File versionDir) {
         File local = new File(versionDir, CLIENT_NAME + ".json");
         if (!local.isFile()) return; // ランチャーのversionsの外で動いている時は触らない
         try {
