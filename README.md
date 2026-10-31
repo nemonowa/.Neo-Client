@@ -2,7 +2,7 @@
 
 # 🚀｜.Neo-Client - Minecraft Launcher Profile
 
-**説明：** 艦長が自分用に作った Minecraft の起動構成。<br>公式ランチャーから、Fabric と描画系の Mod が入った 26.3 をワンクリックで起動する。
+**説明：** Project-NEXUS専用のMinecraft の起動構成。<br>.minecraft/versionsに.Neo-Client\.Neo-Client.jsonを展開するだけで全ての環境構築が自動できる！
 
 *Install once. Launch from the official launcher. Mods come by themselves.*
 
