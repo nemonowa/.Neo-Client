@@ -16,10 +16,10 @@
       "name": "com.neo:neoclient:1.0",
       "downloads": {
         "artifact": {
-          "path": "com/neo/neoclient/1.0/neoclient-1.0.jar",
+          "path": "neo/neoclient.jar",
           "url": "https://github.com/nemonowa/.Neo-Client/releases/download/v1.0/neoclient.jar",
-          "sha1": "c3ca145c7cf3b4b0c486d874c7f26a8b98e38cd6",
-          "size": 20068
+          "sha1": "7871934b362812d0f4eeb3e0bbefa1c14a961199",
+          "size": 20510
         }
       }
     },

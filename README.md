@@ -36,6 +36,7 @@ Author   : argonaute_nemo
 - 📦 **Mod を自動で用意**：Fabric API・Sodium・Iris は Modrinth から、NeoMods は GitHub のリリースから、起動時に入れる
 - 🛡️ **確かめてから入れる**：取得先は Modrinth と NeoMods のリリースだけ。ハッシュが合わないファイルは捨てる
 - 🛟 **止まらない**：Mod を取得できなくても、ゲームはそのまま起動を続ける
+- 🗂️ **専用のフォルダ**：セーブ・設定・Mod は `versions\.Neo-Client` に置き、通常の Minecraft とは混ざらない
 - 📝 **ログを残す**：起動のたびにログをファイルへ保存する
 
 ---
@@ -75,8 +76,9 @@ jar --create --file neoclient.jar -C out .
 テスト（ローカルの仮サーバーで Mod の取得を確かめる。最後に `ALL PASS`）：
 
 ```text
-javac -encoding UTF-8 -cp out -d out test/ModSetupTest.java
+javac -encoding UTF-8 -cp out -d out test/*.java
 java -Dtest.root=<空のフォルダ> -cp out com.neo.ModSetupTest
+java -Dtest.root=<空のフォルダ> -cp out com.neo.NeoClientTest
 ```
 
 ---
@@ -89,6 +91,7 @@ java -Dtest.root=<空のフォルダ> -cp out com.neo.ModSetupTest
 | 📦 Mod | Fabric API・Sodium・Iris を Modrinth から、NeoMods を GitHub のリリース（v26.3 など、Minecraft の版と同じタグ）から取得 |
 | 🔒 安全 | 取得先は Modrinth と NeoMods のリリースだけ・SHA-512 / SHA-256 で検証・大きすぎるファイルは入れない |
 | ☕ Java | Java 25 未満で起動すると警告を出す |
+| 🗂️ フォルダ | セーブ・`options.txt`・`mods`・リソースパックは `%APPDATA%\.minecraft\versions\.Neo-Client\` に保存。音などのアセットとライブラリは通常の Minecraft と共有 |
 | 📝 ログ | `versions/.Neo-Client/neoclient_logs/` に保存（最新は `latest.log`） |
 
 ---

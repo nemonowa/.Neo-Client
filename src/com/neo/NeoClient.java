@@ -13,8 +13,9 @@ import java.util.Date;
 /**
  * .Neo-Client 最小構成ローダー。
  * バニラの起動処理(net.minecraft.client.main.Main)の前段に割り込み、
- * 1) 初回起動時の案内表示
- * 2) 標準出力/標準エラーの簡易ログ保存
+ * 1) ゲームのフォルダを versions/.Neo-Client へ切り替え(バニラとセーブ・設定・modsを分ける)
+ * 2) 初回起動時の案内表示
+ * 3) 標準出力/標準エラーの簡易ログ保存
  * を行ってから、本来のMainへ処理を引き継ぐ。
  */
 public class NeoClient {
@@ -31,9 +32,11 @@ public class NeoClient {
     private static final boolean REQUIRE_FABRIC = true;
     private static final String MARKER_FILE_NAME = ".neoclient_initialized";
     private static final String LOG_DIR_NAME = "neoclient_logs";
+    private static final String GAME_DIR_ARG = "--gameDir";
 
     public static void main(String[] args) throws Exception {
-        File gameDir = resolveGameDir(args);
+        File gameDir = selectGameDir(resolveGameDir(args));
+        args = withGameDir(args, gameDir);
 
         boolean firstRun = checkFirstRun(gameDir);
         if (firstRun) {
@@ -118,9 +121,45 @@ public class NeoClient {
         }
     }
 
+    /**
+     * ランチャーが渡したゲームのフォルダ(.minecraft)の versions/.Neo-Client を、このクライアントのゲームのフォルダにする。
+     * セーブ・options.txt・mods・リソースパックがバニラと分かれる。assets・librariesは別の引数なので共有のまま。
+     * ランチャー側でゲームのフォルダを指定していて versions/.Neo-Client が無いときは変えない。
+     */
+    static File selectGameDir(File launcherDir) {
+        if (isVersionDir(launcherDir)) return launcherDir;
+        File own = versionDir(launcherDir);
+        return own.isDirectory() ? own : launcherDir;
+    }
+
+    /** --gameDir の値を差し替えた引数を返す(無ければ足す)。元の配列は変えない。 */
+    static String[] withGameDir(String[] args, File gameDir) {
+        String[] out = args.clone();
+        for (int i = 0; i < out.length - 1; i++) {
+            if (GAME_DIR_ARG.equals(out[i])) {
+                out[i + 1] = gameDir.getPath();
+                return out;
+            }
+        }
+        String[] added = java.util.Arrays.copyOf(out, out.length + 2);
+        added[out.length] = GAME_DIR_ARG;
+        added[out.length + 1] = gameDir.getPath();
+        return added;
+    }
+
+    /** このクライアント自身のフォルダ(versions/.Neo-Client)。gameDir が既にそこなら gameDir そのもの。 */
+    static File versionDir(File gameDir) {
+        return isVersionDir(gameDir) ? gameDir : new File(new File(gameDir, "versions"), CLIENT_NAME);
+    }
+
+    private static boolean isVersionDir(File dir) {
+        File parent = dir.getAbsoluteFile().getParentFile();
+        return CLIENT_NAME.equals(dir.getName()) && parent != null && "versions".equals(parent.getName());
+    }
+
     private static File resolveGameDir(String[] args) {
         for (int i = 0; i < args.length - 1; i++) {
-            if ("--gameDir".equals(args[i])) {
+            if (GAME_DIR_ARG.equals(args[i])) {
                 return new File(args[i + 1]);
             }
         }
@@ -148,8 +187,7 @@ public class NeoClient {
         System.out.println(" 通常のMinecraftと同じ操作で問題ありませんが、");
         System.out.println(" 以下の点にご注意ください。");
         System.out.println();
-        System.out.println(" ・ゲームデータは通常のバニラと共有されます");
-        System.out.println("   (ワールドデータ等は上書き/共有される場合があります)");
+        System.out.println(" ・セーブ・設定・modsは " + gameDir.getPath() + " に保存します");
         System.out.println(" ・modsフォルダに Fabric API / Sodium / Iris / NeoMods が無い場合は、起動時に自動で導入します");
         System.out.println("   (Modrinth・GitHubから取得。インターネット接続が必要。導入しない場合は -Dneo.skipModSetup=true)");
         System.out.println(" ・ログは versions/" + CLIENT_NAME + "/" + LOG_DIR_NAME
@@ -162,8 +200,7 @@ public class NeoClient {
 
     private static void setupLogCapture(File gameDir) throws IOException {
         // ログは versions/.Neo-Client/ (このバージョン自身の名前空間)の中に置く
-        File versionDir = new File(new File(gameDir, "versions"), CLIENT_NAME);
-        File logDir = new File(versionDir, LOG_DIR_NAME);
+        File logDir = new File(versionDir(gameDir), LOG_DIR_NAME);
         if (!logDir.exists()) {
             logDir.mkdirs();
         }

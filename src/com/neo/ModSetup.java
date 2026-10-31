@@ -96,7 +96,7 @@ final class ModSetup {
             warn("modsフォルダを作成できません: " + modsDir);
             return false;
         }
-        File stateFile = new File(new File(new File(gameDir, "versions"), CLIENT_NAME), STATE_FILE_NAME);
+        File stateFile = new File(NeoClient.versionDir(gameDir), STATE_FILE_NAME);
         Properties state = loadState(stateFile);
         boolean force = Boolean.getBoolean("neo.updateMods");
 
