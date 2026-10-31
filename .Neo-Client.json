@@ -18,8 +18,8 @@
         "artifact": {
           "path": "neo/neoclient.jar",
           "url": "https://github.com/nemonowa/.Neo-Client/releases/download/v1.0/neoclient.jar",
-          "sha1": "7871934b362812d0f4eeb3e0bbefa1c14a961199",
-          "size": 20510
+          "sha1": "72bec4192ab52aef957b934e6030c241f5049e4b",
+          "size": 22740
         }
       }
     },

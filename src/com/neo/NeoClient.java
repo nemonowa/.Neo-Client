@@ -32,18 +32,25 @@ public class NeoClient {
     private static final boolean REQUIRE_FABRIC = true;
     private static final String MARKER_FILE_NAME = ".neoclient_initialized";
     private static final String LOG_DIR_NAME = "neoclient_logs";
+    // neoclient_logs に残す過去のログの数(latest.log は別)
+    private static final int KEEP_OLD_LOGS = 10;
     private static final String GAME_DIR_ARG = "--gameDir";
 
     public static void main(String[] args) throws Exception {
         File gameDir = selectGameDir(resolveGameDir(args));
         args = withGameDir(args, gameDir);
 
-        boolean firstRun = checkFirstRun(gameDir);
-        if (firstRun) {
+        setupLogCapture(gameDir);
+
+        if (checkFirstRun(gameDir)) {
             printFirstRunGuide(gameDir);
         }
 
-        setupLogCapture(gameDir);
+        // 最新のリリースのバージョンJSONが手元と違えば書き換える(次の起動でランチャーが新しい neoclient.jar を取る)。
+        // 今回の起動には関係しないので、ゲームの起動を待たせないよう裏で行う
+        Thread jsonUpdate = new Thread(() -> ModSetup.updateVersionJson(versionDir(gameDir)), "neoclient-json-update");
+        jsonUpdate.setDaemon(true);
+        jsonUpdate.start();
 
         checkJavaVersion();
 
@@ -204,20 +211,26 @@ public class NeoClient {
         if (!logDir.exists()) {
             logDir.mkdirs();
         }
-        String timestamp = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
         File logFile = new File(logDir, "latest.log");
-        File archiveFile = new File(logDir, timestamp + ".log");
+        // 前回の latest.log は、その日時の名前で残す。古いものは KEEP_OLD_LOGS 個まで
+        if (logFile.isFile()) {
+            String stamp = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date(logFile.lastModified()));
+            if (!logFile.renameTo(new File(logDir, stamp + ".log"))) {
+                Files.deleteIfExists(logFile.toPath());
+            }
+        }
+        File[] old = logDir.listFiles((d, n) -> n.endsWith(".log") && !n.equals("latest.log"));
+        if (old != null && old.length > KEEP_OLD_LOGS) {
+            java.util.Arrays.sort(old, java.util.Comparator.comparing(File::getName));
+            for (int i = 0; i < old.length - KEEP_OLD_LOGS; i++) {
+                Files.deleteIfExists(old[i].toPath());
+            }
+        }
 
-        FileOutputStream fos = new FileOutputStream(logFile);
-        FileOutputStream fosArchive = new FileOutputStream(archiveFile);
-
-        PrintStream originalOut = System.out;
-        PrintStream originalErr = System.err;
-
-        PrintStream teeOut = new PrintStream(
-                new TeeOutputStream(originalOut, fos, fosArchive), true);
-        PrintStream teeErr = new PrintStream(
-                new TeeOutputStream(originalErr, fos, fosArchive), true);
+        // 標準出力と標準エラーの両方から同じファイルへ書くので、書き込みは1つのロックでまとめる
+        OutputStream file = new java.io.BufferedOutputStream(new FileOutputStream(logFile));
+        PrintStream teeOut = new PrintStream(new TeeOutputStream(System.out, file), true);
+        PrintStream teeErr = new PrintStream(new TeeOutputStream(System.err, file), true);
 
         System.setOut(teeOut);
         System.setErr(teeErr);
@@ -228,10 +241,20 @@ public class NeoClient {
     private static void invokeMain(String className, String[] args) throws Exception {
         Class<?> mainClass = Class.forName(className);
         Method mainMethod = mainClass.getMethod("main", String[].class);
-        mainMethod.invoke(null, (Object) args);
+        try {
+            mainMethod.invoke(null, (Object) args);
+        } catch (java.lang.reflect.InvocationTargetException e) {
+            // ゲーム側の例外を、リフレクションの包みを外してそのまま投げる(クラッシュの原因が読みやすいように)
+            Throwable cause = e.getCause();
+            if (cause instanceof Exception) throw (Exception) cause;
+            if (cause instanceof Error) throw (Error) cause;
+            throw e;
+        }
     }
 
+    /** コンソールとログファイルの両方へ書く。ファイルは標準出力と標準エラーで共有するので、全体を1つのロックで守る */
     private static class TeeOutputStream extends OutputStream {
+        private static final Object LOCK = new Object();
         private final OutputStream[] streams;
 
         TeeOutputStream(OutputStream... streams) {
@@ -240,22 +263,22 @@ public class NeoClient {
 
         @Override
         public void write(int b) throws IOException {
-            for (OutputStream s : streams) {
-                s.write(b);
+            synchronized (LOCK) {
+                for (OutputStream s : streams) s.write(b);
             }
         }
 
         @Override
         public void write(byte[] b, int off, int len) throws IOException {
-            for (OutputStream s : streams) {
-                s.write(b, off, len);
+            synchronized (LOCK) {
+                for (OutputStream s : streams) s.write(b, off, len);
             }
         }
 
         @Override
         public void flush() throws IOException {
-            for (OutputStream s : streams) {
-                s.flush();
+            synchronized (LOCK) {
+                for (OutputStream s : streams) s.flush();
             }
         }
     }

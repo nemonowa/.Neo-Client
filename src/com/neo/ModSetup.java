@@ -49,7 +49,8 @@ import java.util.zip.ZipFile;
  *   neo.githubApi          GitHub APIのベースURL(既定 https://api.github.com)。テスト用
  *
  * NeoMods は Modrinth ではなく GitHub のリリースから取る。タグが v+MCバージョン(v26.3 など)の
- * 最新のリリースを選び、GitHub が付ける SHA-256 で検証する。
+ * 最新のリリースを選び、GitHub が付ける SHA-256 で検証する。起動のたびに最新を確かめ、新しい版が出ていれば入れ替える
+ * (確かめられなければ、入れ済みの版のまま起動する)。
  */
 final class ModSetup {
 
@@ -137,19 +138,33 @@ final class ModSetup {
         String curHash = state.getProperty(hashKey);
         boolean sameMc = mc.equals(state.getProperty(slug + ".mc"));
 
-        // 揃っていてハッシュも一致するなら、通信しない
-        if (!force && sameMc && curFile != null && curHash != null && isSafeJarName(curFile)) {
-            File f = new File(modsDir, curFile);
-            if (f.isFile() && curHash.equalsIgnoreCase(digest(f, algorithm))) {
-                info(slug + ": OK (" + curFile + ")");
+        boolean installed = sameMc && curFile != null && curHash != null && isSafeJarName(curFile)
+                && new File(modsDir, curFile).isFile() && curHash.equalsIgnoreCase(digest(new File(modsDir, curFile), algorithm));
+
+        // Modrinthの物は、揃っていてハッシュも一致するなら通信しない(版の組み合わせを勝手に変えないため)
+        if (repo == null && !force && installed) {
+            info(slug + ": OK (" + curFile + ")");
+            return;
+        }
+
+        Remote remote;
+        if (repo == null) {
+            remote = resolveLatest(slug, mc, collectPins(state));
+        } else {
+            // GitHubの物(自作のMOD)は毎回最新のリリースを確かめる。確かめられなければ今のjarのまま起動する
+            try {
+                remote = resolveGithub(repo, mc);
+            } catch (IOException e) {
+                if (!installed) throw e;
+                info(slug + ": 最新版を確認できないため、今の版のまま起動します (" + curFile + ", " + e.getMessage() + ")");
                 return;
             }
         }
-
-        Remote remote = repo == null ? resolveLatest(slug, mc, collectPins(state)) : resolveGithub(repo, mc);
         File target = new File(modsDir, remote.filename);
 
-        if (target.isFile() && remote.hash.equalsIgnoreCase(digest(target, remote.hashAlgorithm))) {
+        // 入れ済みのjarと同じ物なら、ハッシュを計算し直さない
+        boolean same = installed && remote.filename.equals(curFile) && remote.hash.equalsIgnoreCase(curHash);
+        if (same || (target.isFile() && remote.hash.equalsIgnoreCase(digest(target, remote.hashAlgorithm)))) {
             info(slug + ": OK (" + remote.filename + ")");
         } else {
             info(slug + ": ダウンロードします " + remote.filename
@@ -334,6 +349,77 @@ final class ModSetup {
             return false;
         } catch (IOException | IllegalArgumentException e) {
             return false;
+        }
+    }
+
+    // ------------------------------------------------------------------ バージョンJSONの更新
+
+    /** .Neo-Client 自身のリポジトリ。最新のリリースに Neo-Client.json(versions/.Neo-Client/.Neo-Client.json の中身)を付ける */
+    static final String CLIENT_REPO = "nemonowa/.Neo-Client";
+    private static final String CLIENT_JSON_ASSET = "Neo-Client.json";
+    private static final long MAX_JSON_BYTES = 1024 * 1024;
+
+    /**
+     * 最新のリリースの Neo-Client.json が手元の .Neo-Client.json と違えば書き換える。
+     * 書き換えは次の起動から効く(ランチャーが新しいSHA1を見て neoclient.jar を取り直す)。
+     * 失敗しても何もしない(今のJSONのまま起動を続ける)。
+     */
+    static void updateVersionJson(File versionDir) {
+        File local = new File(versionDir, CLIENT_NAME + ".json");
+        if (!local.isFile()) return; // ランチャーのversionsの外で動いている時は触らない
+        try {
+            Object root = Json.parse(httpGetString(githubApiBase() + "/repos/" + CLIENT_REPO + "/releases/latest"));
+            if (!(root instanceof Map)) throw new IOException("APIの応答が想定外です");
+            Map<String, Object> asset = null;
+            for (Map<String, Object> a : castList(((Map<?, ?>) root).get("assets"))) {
+                if (CLIENT_JSON_ASSET.equals(a.get("name"))) asset = a;
+            }
+            if (asset == null) throw new IOException(CLIENT_JSON_ASSET + " がリリースにありません");
+            String url = asString(asset.get("browser_download_url"));
+            String digest = asString(asset.get("digest"));
+            String hash = digest != null && digest.startsWith("sha256:") ? digest.substring("sha256:".length()) : null;
+            if (hash == null || !HEX_64.matcher(hash).matches()) throw new IOException("SHA-256が取得できません");
+            if (url == null || !isAllowedGithubUrl(url, CLIENT_REPO)) throw new IOException("想定外のダウンロード元です: " + url);
+            if (hash.equalsIgnoreCase(digest(local, "SHA-256"))) {
+                info(CLIENT_NAME + ".json: OK");
+                return;
+            }
+
+            byte[] body = httpGetBytes(url, MAX_JSON_BYTES);
+            if (!hex(MessageDigest.getInstance("SHA-256").digest(body)).equalsIgnoreCase(hash)) {
+                throw new IOException("SHA-256が一致しません");
+            }
+            Object json = Json.parse(new String(body, StandardCharsets.UTF_8));
+            if (!(json instanceof Map) || !CLIENT_NAME.equals(((Map<?, ?>) json).get("id"))) {
+                throw new IOException("id が " + CLIENT_NAME + " ではありません");
+            }
+            File part = new File(versionDir, "." + CLIENT_NAME + ".json.part");
+            Files.write(part.toPath(), body);
+            try {
+                Files.move(part.toPath(), local.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(part.toPath(), local.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            } finally {
+                Files.deleteIfExists(part.toPath());
+            }
+            info(CLIENT_NAME + ".json を最新の版に更新しました(次の起動から有効)");
+        } catch (Exception e) {
+            info(CLIENT_NAME + ".json の更新を確認できませんでした (" + e.getMessage() + ")");
+        }
+    }
+
+    private static byte[] httpGetBytes(String url, long max) throws IOException {
+        HttpURLConnection c = open(url, DOWNLOAD_READ_TIMEOUT_MS);
+        try {
+            int code = c.getResponseCode();
+            if (code != 200) throw new IOException("HTTP " + code + " (" + url + ")");
+            try (InputStream in = c.getInputStream()) {
+                byte[] body = in.readNBytes((int) max + 1);
+                if (body.length > max) throw new IOException("ファイルが大きすぎます");
+                return body;
+            }
+        } finally {
+            c.disconnect();
         }
     }
 

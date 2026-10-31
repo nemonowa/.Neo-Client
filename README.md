@@ -36,6 +36,7 @@ Author   : argonaute_nemo
 - 📦 **Mod を自動で用意**：Fabric API・Sodium・Iris は Modrinth から、NeoMods は GitHub のリリースから、起動時に入れる
 - 🛡️ **確かめてから入れる**：取得先は Modrinth と NeoMods のリリースだけ。ハッシュが合わないファイルは捨てる
 - 🛟 **止まらない**：Mod を取得できなくても、ゲームはそのまま起動を続ける
+- 🔄 **自動で最新に**：リリースを出すと、次の起動から .Neo-Client 本体と NeoMods が最新の版に入れ替わる
 - 🗂️ **専用のフォルダ**：セーブ・設定・Mod は `versions\.Neo-Client` に置き、通常の Minecraft とは混ざらない
 - 📝 **ログを残す**：起動のたびにログをファイルへ保存する
 
@@ -103,7 +104,7 @@ java -Dtest.root=<空のフォルダ> -cp out com.neo.NeoClientTest
 | 引数 | 動作 |
 |---|---|
 | `-Dneo.skipModSetup=true` | Mod の自動導入をしない |
-| `-Dneo.updateMods=true` | 入れた Mod を最新の版に更新する |
+| `-Dneo.updateMods=true` | Fabric API・Sodium・Iris を最新の版に更新する（NeoMods は起動のたびに最新の版を確かめる） |
 
 ---
 

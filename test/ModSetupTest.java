@@ -49,6 +49,7 @@ public class ModSetupTest {
     static byte[] neoJar;
     static volatile String neoDigestOverride;
     static volatile String mockMode = "";
+    static volatile byte[] clientJson = "{\"id\":\".Neo-Client\",\"v\":2}".getBytes(StandardCharsets.UTF_8);
     static HttpServer server;
     static int port;
     static int pass = 0, fail = 0;
@@ -165,6 +166,22 @@ public class ModSetupTest {
             ex.getResponseBody().write(out);
             ex.close();
         });
+        // .Neo-Client 自身の最新リリース(Neo-Client.json)
+        server.createContext("/repos/nemonowa/.Neo-Client/releases/latest", ex -> {
+            String digest;
+            try { digest = "sha256:" + sha256(clientJson); } catch (Exception e) { throw new RuntimeException(e); }
+            byte[] out = ("{\"tag_name\":\"v1.0\",\"assets\":[{\"name\":\"Neo-Client.json\",\"digest\":\"" + digest
+                    + "\",\"browser_download_url\":\"http://127.0.0.1:" + port + "/cj/Neo-Client.json\"}]}").getBytes(StandardCharsets.UTF_8);
+            ex.sendResponseHeaders(200, out.length);
+            ex.getResponseBody().write(out);
+            ex.close();
+        });
+        server.createContext("/cj/", ex -> {
+            byte[] body = clientJson;
+            ex.sendResponseHeaders(200, body.length);
+            ex.getResponseBody().write(body);
+            ex.close();
+        });
         server.createContext("/gh/", ex -> {
             GH_FILE_REQ.incrementAndGet();
             if (!ex.getRequestURI().getPath().equals("/gh/NeoMod.jar")) { ex.sendResponseHeaders(404, -1); ex.close(); return; }
@@ -188,6 +205,16 @@ public class ModSetupTest {
         try { ok = ModSetup.ensure(gameDir, MC); }
         finally { System.setOut(o); System.setErr(e); }
         return new Result(ok, bo.toString(StandardCharsets.UTF_8));
+    }
+
+    static Result runUpdate(File versionDir) {
+        PrintStream o = System.out, e = System.err;
+        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+        PrintStream cap = new PrintStream(bo, true, StandardCharsets.UTF_8);
+        System.setOut(cap); System.setErr(cap);
+        try { ModSetup.updateVersionJson(versionDir); }
+        finally { System.setOut(o); System.setErr(e); }
+        return new Result(true, bo.toString(StandardCharsets.UTF_8));
     }
 
     static void check(String name, boolean ok) {
@@ -231,7 +258,8 @@ public class ModSetupTest {
         System.out.println("T2: 再実行 — ネットワークに一切接続しない(+mc26.3 形式でも導入済みと判定)");
         int a = API_REQ.get(), f = FILE_REQ.get();
         r = run(g1);
-        check("追加リクエスト 0", API_REQ.get() == a && FILE_REQ.get() == f && GH_REQ.get() == 1);
+        check("Modrinth へのリクエスト 0・NeoMods は最新の確認だけ(API +1、ファイル 0)", API_REQ.get() == a && FILE_REQ.get() == f
+                && GH_REQ.get() == 2 && GH_FILE_REQ.get() == 1);
         check("戻り値 true・警告なし", r.ok() && !r.log().contains("警告"));
         check("3つとも OK 表示", r.log().contains("fabric-api: OK") && r.log().contains("sodium: OK") && r.log().contains("iris: OK"));
 
@@ -377,6 +405,16 @@ public class ModSetupTest {
         MODS.get("iris").get(0).requires.clear();
         MODS.get("iris").get(0).requires.add("SOD092");
 
+        System.out.println("T19: NeoMods の新しい版を出したら、次の起動で入れ替わる(updateMods なし)");
+        byte[] oldNeo = neoJar;
+        neoJar = jar("neo", "263-new");
+        f = GH_FILE_REQ.get();
+        r = run(g1);
+        check("新しい NeoMod.jar に入れ替わる", sha256(read(new File(m1, "NeoMod.jar"))).equals(sha256(neoJar)) && GH_FILE_REQ.get() == f + 1);
+        check("戻り値 true", r.ok());
+        neoJar = oldNeo;
+        run(g1);
+
         System.out.println("T18: NeoMods の SHA-256 が合わなければ配置しない");
         neoDigestOverride = "sha256:" + sha256("different".getBytes());
         File g18 = freshDir();
@@ -385,12 +423,30 @@ public class ModSetupTest {
         check("NeoMod.jar は配置されない・.partも残らない・false", !r.ok() && !has(new File(g18, "mods"), "NeoMod.jar") && noPart(new File(g18, "mods")));
         check("警告に SHA-256 と出る", r.log().contains("SHA-256"));
 
+        System.out.println("T20: リリースの Neo-Client.json が手元と違えば .Neo-Client.json を書き換える");
+        File vdir = new File(freshDir(), "versions/.Neo-Client"); vdir.mkdirs();
+        File local = new File(vdir, ".Neo-Client.json");
+        Files.writeString(local.toPath(), "{\"id\":\".Neo-Client\",\"v\":1}");
+        r = runUpdate(vdir);
+        check("最新の中身に書き換わる・.part が残らない", java.util.Arrays.equals(read(local), clientJson) && !new File(vdir, "..Neo-Client.json.part").exists());
+        r = runUpdate(vdir);
+        check("同じなら OK とだけ出る", r.log().contains(".Neo-Client.json: OK"));
+        byte[] good = clientJson;
+        clientJson = "{\"id\":\"other\"}".getBytes(StandardCharsets.UTF_8);
+        runUpdate(vdir);
+        check("id が .Neo-Client でなければ書き換えない", java.util.Arrays.equals(read(local), good));
+        clientJson = good;
+        File noJson = new File(freshDir(), "versions/.Neo-Client"); noJson.mkdirs();
+        runUpdate(noJson);
+        check("手元に .Neo-Client.json が無ければ作らない", !new File(noJson, ".Neo-Client.json").exists());
+
         System.out.println("T15: サーバー停止(オフライン)");
         server.stop(0);
         r = run(freshDir());
         check("取得できなくても例外にならない・false", !r.ok() && r.log().contains("4 個"));
         r = run(g1);
         check("取得済みならオフラインでも警告なし・true", r.ok() && !r.log().contains("警告"));
+        check("NeoMods は今の版のまま起動すると出る", r.log().contains("今の版のまま"));
 
         System.out.println();
         System.out.println(fail == 0 ? "ALL PASS (" + pass + ")" : "FAILED: PASS=" + pass + " FAIL=" + fail);
