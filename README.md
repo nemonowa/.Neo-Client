@@ -44,17 +44,18 @@ Author   : argonaute_nemo
 
 ## ❱ 導入【Introduction】
 
-**json を1つ置くだけで使える。**
+**zip を1つ展開するだけで使える。**
 
 1. ランチャーを終了する
-2. [Releases](../../releases) から `Neo-Client.zip` をダウンロードして展開する
-3. 中の `.Neo-Client.json` を、次の場所に置く（フォルダが無ければ作る）
+2. [Releases](../../releases) から `Neo-Client.zip` をダウンロードし、`%APPDATA%\.minecraft\versions` に展開する
 
    ```text
    %APPDATA%\.minecraft\versions\.Neo-Client\.Neo-Client.json
    ```
 
-4. ランチャーを起動し、インストール一覧の「.Neo-Client」で起動する
+   上の場所に `.Neo-Client.json`（**先頭の `.` ドット抜け注意！**）ができていればよい。リリースにある単体の `Neo-Client.json` は自動更新用なので、置かない
+
+3. ランチャーを起動し、インストール一覧の「.Neo-Client」で起動する
 
 Minecraft 26.3・Fabric Loader・`neoclient.jar` は、起動した時にランチャーが自動でダウンロードする。
 
