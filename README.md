@@ -42,17 +42,26 @@ Author   : argonaute_nemo
 
 ## ❱ 導入【Introduction】
 
-1. Minecraft ランチャーで 26.3 を一度起動しておく
-2. ランチャーを完全に終了する
-3. [Releases](../../releases) から zip をダウンロードして展開し、`install.bat` を実行する（「OK: ...」と出れば成功）
+**json を1つ置くだけで使える。**
+
+1. ランチャーを終了する
+2. [Releases](../../releases) から `Neo-Client.zip` をダウンロードして展開する
+3. 中の `.Neo-Client.json` を、次の場所に置く（フォルダが無ければ作る）
+
+   ```text
+   %APPDATA%\.minecraft\versions\.Neo-Client\.Neo-Client.json
+   ```
+
 4. ランチャーを起動し、インストール一覧の「.Neo-Client」で起動する
 
-`install.bat` は次の2つを `%APPDATA%\.minecraft` へ写す。
+Minecraft 26.3・Fabric Loader・`neoclient.jar` は、起動した時にランチャーが自動でダウンロードする。
 
-```text
-versions\.Neo-Client\.Neo-Client.json
-libraries\com\neo\neoclient\1.0\neoclient-1.0.jar
-```
+<details>
+<summary>インストーラーを使う場合</summary>
+
+`Neo-Client-install.zip` を展開して `install.bat` を実行する（「OK: ...」と出れば成功）。json と jar を手元から `%APPDATA%\.minecraft` へ写すので、jar のダウンロードが要らない。
+
+</details>
 
 初めて起動した時だけ、コンソールに注意書きを出す。
 
