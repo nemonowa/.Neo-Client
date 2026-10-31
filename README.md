@@ -119,8 +119,8 @@ java -Dtest.root=<空のフォルダ> -cp out com.neo.NeoClientTest
 
 ## ❱ 権利【License】
 
-- Minecraft は Mojang の商標。.Neo-Client は Mojang・Microsoft と関係がない。
-- 自動で入れる Mod のうち Fabric API・Sodium・Iris は、それぞれの作者の物。各 Mod のライセンスに従う。
+- Minecraft は Mojang の商標であり.Neo-Client は Mojang・Microsoft と無関係。
+- Fabric API・Sodium・Iris は、各著作者に帰属し Mod のライセンスに従う。
 
 ---
 
