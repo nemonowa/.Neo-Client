@@ -2,7 +2,7 @@
 
 # 🚀｜.Neo-Client - Minecraft Launcher Profile
 
-**説明：** NEXUS専用のMinecraft の特殊バージョン。<br>.minecraft/versionsに.Neo-Client\.Neo-Client.jsonを展開するだけで全ての環境構築が自動できる！
+**説明：** NEXUS専用のMinecraft の特殊バージョン。<br>`.minecraft/versions`に`.Neo-Client\.Neo-Client.json`を展開するだけで全ての環境構築が自動できる！
 
 *Install once. Launch from the official launcher. Mods come by themselves.*
 
