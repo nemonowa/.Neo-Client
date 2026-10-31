@@ -80,10 +80,7 @@ Minecraft 26.3・Fabric Loader・`neoclient.jar` は、起動した時にラン�
 |---|---|
 | Windows | `install.cmd` をダブルクリック |
 | macOS・Linux | ターミナルで `./install.sh`（実行権限が無ければ `chmod +x install.sh`、または `bash install.sh`） |
-
-- json と jar を手元から `<minecraft>` へ写すので、jar のダウンロードが要らない。
 - macOS・Linux で `.minecraft` の場所が違う場合は、`./install.sh /path/to/minecraft` のように第1引数で指定する。
-- jar が json の sha1・サイズと合わない場合は、何も置かずに止まる。
 
 ---
 
